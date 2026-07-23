@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClubF5 Sound Widget — Guía de integración</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0a0e13;
+    --panel:#12181f;
+    --panel-2:#171f28;
+    --line:rgba(150,160,175,0.14);
+    --line-strong:rgba(150,160,175,0.28);
+    --text:#e7eaee;
+    --text-muted:#8a93a3;
+    --cue:#ff5a3c;
+    --cue-dim:rgba(255,90,60,0.16);
+    --wave:#29c7ac;
+    --wave-dim:rgba(41,199,172,0.16);
+    --amber:#f2b544;
+
+    --display: 'Big Shoulders Display', sans-serif;
+    --body: 'Source Sans 3', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+
+    --radius-sm:6px;
+    --radius-md:10px;
+    --radius-lg:16px;
+  }
+
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(255,90,60,0.07), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(41,199,172,0.06), transparent 55%),
+      var(--ink);
+    color:var(--text);
+    font-family:var(--body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{ background:var(--cue); color:#141414; }
+  a{ color:var(--wave); text-decoration:none; }
+  a:hover{ text-decoration:underline; }
+
+  code, pre, .mono{ font-family:var(--mono); }
+
+  /* ============ layout shell ============ */
+  .shell{ max-width:1080px; margin:0 auto; padding:0 24px; }
+  section{ padding:88px 0; border-top:1px solid var(--line); }
+  section:first-of-type{ border-top:none; }
+  .eyebrow{
+    font-family:var(--mono); font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--wave); display:flex; align-items:center; gap:10px; margin-bottom:14px;
+  }
+  .eyebrow::before{ content:''; width:18px; height:1px; background:var(--wave); display:inline-block; }
+  h2{
+    font-family:var(--display); font-weight:700; font-size:clamp(28px,3.4vw,40px);
+    letter-spacing:.01em; margin:0 0 12px; text-transform:uppercase;
+  }
+  .lede{ color:var(--text-muted); font-size:17px; max-width:640px; margin:0 0 40px; }
+
+  /* ============ nav ============ */
+  header.nav{
+    position:sticky; top:0; z-index:40;
+    backdrop-filter:blur(10px);
+    background:rgba(10,14,19,0.78);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{
+    max-width:1080px; margin:0 auto; padding:14px 24px;
+    display:flex; align-items:center; justify-content:space-between; gap:24px;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; font-family:var(--display); font-weight:700; letter-spacing:.02em; font-size:19px; text-transform:uppercase; }
+  .brand .dot{ width:9px; height:9px; border-radius:50%; background:var(--cue); box-shadow:0 0 0 3px var(--cue-dim); }
+  nav.links{ display:flex; gap:22px; flex-wrap:wrap; }
+  nav.links a{ color:var(--text-muted); font-size:14px; font-weight:600; }
+  nav.links a:hover{ color:var(--text); text-decoration:none; }
+
+  /* ============ hero ============ */
+  .hero{ padding:72px 0 60px; }
+  .hero-grid{ display:grid; grid-template-columns:1.1fr .9fr; gap:56px; align-items:start; }
+  @media (max-width:860px){ .hero-grid{ grid-template-columns:1fr; } }
+
+  .freq-ticks{
+    position:relative; height:26px; margin-bottom:22px; overflow:hidden;
+    -webkit-mask-image:linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+            mask-image:linear-gradient(90deg, transparent, #000 12%, #000 88%, transparent);
+  }
+  .freq-ticks svg{ width:100%; height:100%; display:block; }
+
+  h1{
+    font-family:var(--display); font-weight:800; text-transform:uppercase;
+    font-size:clamp(38px,6vw,64px); line-height:0.98; letter-spacing:.005em; margin:0 0 20px;
+  }
+  h1 span{ color:var(--cue); }
+  .hero p.lede2{ color:var(--text-muted); font-size:18px; max-width:520px; margin:0 0 30px; }
+  .hero-cta{ display:flex; gap:14px; flex-wrap:wrap; }
+
+  .btn{
+    font-family:var(--body); font-weight:700; font-size:14px; letter-spacing:.02em;
+    padding:13px 22px; border-radius:999px; border:1px solid var(--line-strong);
+    cursor:pointer; display:inline-flex; align-items:center; gap:8px;
+    background:transparent; color:var(--text); transition:all .15s ease;
+  }
+  .btn:hover{ border-color:var(--wave); color:var(--wave); }
+  .btn.primary{ background:var(--cue); border-color:var(--cue); color:#191008; }
+  .btn.primary:hover{ filter:brightness(1.08); color:#191008; }
+
+  /* widget mock preview */
+  .console{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-lg);
+    padding:20px; position:relative;
+  }
+  .console-label{ font-family:var(--mono); font-size:11px; color:var(--text-muted); letter-spacing:.08em; text-transform:uppercase; margin-bottom:14px; display:flex; justify-content:space-between; }
+  .onair{ display:flex; align-items:center; gap:6px; color:var(--cue); font-weight:700; }
+  .onair .led{ width:7px; height:7px; border-radius:50%; background:var(--cue); animation:pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ opacity:1; box-shadow:0 0 0 0 rgba(255,90,60,.5);} 50%{ opacity:.55; box-shadow:0 0 0 6px rgba(255,90,60,0);} }
+
+  .player-mock{
+    background:var(--ink); border-radius:var(--radius-md); border:1px solid var(--line);
+    padding:14px 16px; display:flex; align-items:center; gap:14px;
+  }
+  .playbtn{
+    width:38px; height:38px; border-radius:50%; background:var(--cue); flex:none;
+    display:flex; align-items:center; justify-content:center; color:#1a1006;
+  }
+  .playbtn svg{ width:14px; height:14px; }
+  .track-meta{ flex:1; min-width:0; }
+  .track-title{ font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .track-sub{ font-size:12px; color:var(--text-muted); }
+  .wavebars{ display:flex; align-items:flex-end; gap:3px; height:22px; flex:none; }
+  .wavebars span{ width:3px; background:var(--wave); border-radius:2px; animation:bar 1.1s ease-in-out infinite; }
+  .wavebars span:nth-child(1){ height:40%; animation-delay:0s; }
+  .wavebars span:nth-child(2){ height:90%; animation-delay:.15s; }
+  .wavebars span:nth-child(3){ height:60%; animation-delay:.3s; }
+  .wavebars span:nth-child(4){ height:100%; animation-delay:.45s; }
+  .wavebars span:nth-child(5){ height:50%; animation-delay:.6s; }
+  @keyframes bar{ 0%,100%{ transform:scaleY(.4);} 50%{ transform:scaleY(1);} }
+  @media (prefers-reduced-motion:reduce){
+    .onair .led, .wavebars span{ animation:none !important; }
+  }
+
+  .console-foot{ margin-top:14px; font-size:12px; color:var(--text-muted); display:flex; justify-content:space-between; }
+  .badge{ font-family:var(--mono); font-size:11px; padding:3px 8px; border-radius:999px; border:1px solid var(--line-strong); color:var(--text-muted); }
+
+  /* ============ token checker (hero signature tool) ============ */
+  .checker{ margin-top:26px; }
+  .checker textarea{
+    width:100%; min-height:78px; resize:vertical; background:var(--ink);
+    border:1px solid var(--line-strong); border-radius:var(--radius-md); color:var(--text);
+    font-family:var(--mono); font-size:12.5px; padding:12px 14px; outline:none;
+  }
+  .checker textarea:focus{ border-color:var(--wave); }
+  .checker-result{ margin-top:12px; font-size:13px; }
+  .status-row{ display:flex; align-items:center; gap:8px; font-weight:700; margin-bottom:10px; }
+  .status-dot{ width:9px; height:9px; border-radius:50%; flex:none; }
+  .status-dot.ok{ background:var(--wave); box-shadow:0 0 0 3px var(--wave-dim); }
+  .status-dot.bad{ background:var(--cue); box-shadow:0 0 0 3px var(--cue-dim); }
+  .kv{ display:grid; grid-template-columns:120px 1fr; gap:6px 12px; font-family:var(--mono); font-size:12.5px; color:var(--text-muted); }
+  .kv b{ color:var(--text); font-weight:500; }
+
+  /* ============ code blocks ============ */
+  .codeblock{
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-md);
+    overflow:hidden; margin:18px 0;
+  }
+  .codeblock .bar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:9px 14px; border-bottom:1px solid var(--line); background:var(--panel-2);
+  }
+  .codeblock .bar .tag{ font-family:var(--mono); font-size:11px; color:var(--text-muted); letter-spacing:.05em; text-transform:uppercase; }
+  .copy-btn{
+    font-family:var(--mono); font-size:11px; color:var(--text-muted); background:transparent;
+    border:1px solid var(--line-strong); border-radius:6px; padding:4px 10px; cursor:pointer;
+  }
+  .copy-btn:hover{ color:var(--wave); border-color:var(--wave); }
+  .codeblock pre{ margin:0; padding:16px 18px; overflow-x:auto; font-size:13px; line-height:1.65; }
+  .tok-tag{ color:var(--wave); } .tok-attr{ color:var(--amber); } .tok-str{ color:#c9e88c; }
+  .tok-com{ color:var(--text-muted); font-style:italic; } .tok-kw{ color:var(--cue); }
+  .tok-fn{ color:#7fb8ff; }
+
+  /* ============ mode cards ============ */
+  .modes{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  @media (max-width:760px){ .modes{ grid-template-columns:1fr; } }
+  .mode-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-lg); padding:26px; }
+  .mode-card.rec{ border-color:var(--wave); box-shadow:0 0 0 1px rgba(41,199,172,.12); }
+  .mode-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; }
+  .mode-title{ font-family:var(--display); font-weight:700; font-size:20px; text-transform:uppercase; }
+  .pill{ font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding:3px 9px; border-radius:999px; }
+  .pill.rec{ background:var(--wave-dim); color:var(--wave); }
+  .pill.legacy{ background:rgba(242,181,68,.14); color:var(--amber); }
+  .mode-desc{ color:var(--text-muted); font-size:14px; margin-bottom:4px; }
+
+  /* ============ tables ============ */
+  table{ width:100%; border-collapse:collapse; font-size:14px; }
+  th{ text-align:left; font-family:var(--mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); font-weight:500; padding:10px 14px; border-bottom:1px solid var(--line-strong); }
+  td{ padding:12px 14px; border-bottom:1px solid var(--line); vertical-align:top; }
+  td code{ background:var(--panel-2); padding:2px 6px; border-radius:4px; font-size:12.5px; color:var(--amber); }
+  .table-wrap{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-lg); overflow:hidden; }
+
+  /* ============ api cards ============ */
+  .api-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  @media (max-width:760px){ .api-grid{ grid-template-columns:1fr; } }
+  .api-card{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-md); padding:20px; }
+  .api-sig{ font-family:var(--mono); font-size:14px; color:var(--wave); margin-bottom:8px; }
+  .api-desc{ font-size:13.5px; color:var(--text-muted); }
+
+  /* ============ security list ============ */
+  .sec-list{ display:grid; gap:14px; }
+  .sec-item{ display:flex; gap:14px; background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-md); padding:18px 20px; }
+  .sec-item .num{ font-family:var(--display); font-weight:800; font-size:22px; color:var(--cue); flex:none; width:34px; }
+  .sec-item h4{ margin:0 0 4px; font-size:15px; }
+  .sec-item p{ margin:0; color:var(--text-muted); font-size:13.5px; }
+
+  /* ============ faq ============ */
+  details.faq{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius-md); margin-bottom:10px; overflow:hidden; }
+  details.faq summary{ cursor:pointer; padding:16px 20px; font-weight:600; list-style:none; display:flex; justify-content:space-between; align-items:center; gap:12px; }
+  details.faq summary::-webkit-details-marker{ display:none; }
+  details.faq summary::after{ content:'+'; font-family:var(--mono); color:var(--text-muted); font-size:18px; flex:none; }
+  details.faq[open] summary::after{ content:'–'; }
+  details.faq .faq-body{ padding:0 20px 18px; color:var(--text-muted); font-size:14px; }
+  details.faq .faq-body code{ background:var(--panel-2); padding:1px 6px; border-radius:4px; color:var(--amber); font-size:12.5px; }
+
+  footer{ padding:40px 0 60px; text-align:center; color:var(--text-muted); font-size:13px; }
+
+  ::-webkit-scrollbar{ height:8px; width:8px; }
+  ::-webkit-scrollbar-thumb{ background:var(--line-strong); border-radius:4px; }
+</style>
+</head>
+<body>
+<script src="widget-embed.js"></script>
+  
+  <!-- Inicializar widget con credenciales de demo -->
+  <script>
+    // Esperar a que el DOM esté listo
+    document.addEventListener('DOMContentLoaded', function() {
+      ClubF5Widget.connect('clubf5-player', {
+        token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1bmlxdWVfbmFtZSI6ImxhZjV3ZWIiLCJyb2xlIjoiUmVwcm9kdWN0b3IiLCJOb21icmUiOiJMYUY1IFdlYiIsIk51bVN1YyI6IiIsInRva2VuUmVmcmVzaCI6ImE0YjA4ZDIzLTNlNGQtNGIyMi1iYTcyLTliN2E5YjNhMmMyMiIsIkNsaWVudGUiOiJ7XCJjbGlfY29kaWdvXCI6MSxcImNsaV9sb2dvXCI6bnVsbCxcImNsaV9mcnFzcG9cIjo1LFwiY2xpX3VzdWFyaVwiOlwibGFmNVwiLFwiY2xpX21heHNwb1wiOjAsXCJjbGlfdmVucGFnXCI6MzAsXCJjbGlfY29kcGFxXCI6MSxcImNsaV9wcmVmaWpvXCI6XCJsYWZcIixcImNsaV9hdWRpb0NvcnRlXCI6bnVsbCxcImNsaV9jYW50RXF1aXBvc1wiOjB9IiwibmJmIjoxNzg0ODI5MzM5LCJleHAiOjE4MTYzNjUzMzksImlhdCI6MTc4NDgyOTMzOSwiaXNzIjoiaHR0cHM6Ly93ZWIuY2x1YmY1LmNvbS8iLCJhdWQiOiJDbGllbnRlIn0.NBHAfpGqT9Tp-GDjEqBKeHhM9Fs3tc7irnBgaDqCpMQ',
+        height: '80px',
+        theme: 'dark'
+      });
+    });
+  </script>
+<header class="nav">
+  <div class="nav-inner">
+    <div class="brand"><span class="dot"></span>ClubF5 · Sound&nbsp;Widget</div>
+    <nav class="links">
+      <a href="#instalacion">Instalación</a>
+      <a href="#modos">Modos</a>
+      <a href="#token">Token</a>
+      <a href="#opciones">Opciones</a>
+      <a href="#api">API JS</a>
+      <a href="#seguridad">Seguridad</a>
+      <a href="#faq">FAQ</a>
+    </nav>
+  </div>
+</header>
+
+<div class="shell hero">
+  <div class="hero-grid">
+    <div>
+      <div class="freq-ticks" aria-hidden="true">
+        <svg viewBox="0 0 640 26" preserveAspectRatio="none">
+          <g stroke="rgba(150,160,175,0.35)" stroke-width="1">
+            <line x1="0" y1="0" x2="0" y2="26"></line>
+          </g>
+          <g id="ticks"></g>
+        </svg>
+      </div>
+      <h1>Tu radio,<br>en <span>cualquier</span><br>sitio.</h1>
+      <p class="lede2">
+        Embebé el reproductor de ClubF5 en el sitio de cualquier franquicia con dos líneas de código.
+        El token viaja por un canal seguro, nunca por la URL, y la sesión se renueva sola
+        mientras el widget esté abierto.
+      </p>
+      <div class="hero-cta">
+        <a href="#instalacion" class="btn primary">Empezar integración</a>
+        <a href="#token-checker" class="btn">Probar un token →</a>
+      </div>
+    </div>
+
+    <div>
+      <div class="console">
+        <div id="clubf5-player"></div>
+      </div>
+
+      <div class="checker" id="token-checker">
+        <div class="console-label"><span>Verificador de token</span></div>
+        <textarea id="tokenInput" placeholder="Pegá acá un JWT (access_token) para inspeccionarlo…"></textarea>
+        <div class="checker-result" id="tokenResult"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= INSTALACIÓN ================= -->
+<section id="instalacion">
+  <div class="shell">
+    <div class="eyebrow">01 · Instalación</div>
+    <h2>Tres líneas, un reproductor</h2>
+    <p class="lede">
+      Cargá el script, dejá un contenedor vacío en el DOM, y conectá con un token JWT.
+      El widget arma el iframe, hace el handshake seguro y arranca la reproducción.
+    </p>
+
+    <div class="codeblock">
+      <div class="bar"><span class="tag">HTML</span><button class="copy-btn" data-copy="snippet-install">Copiar</button></div>
+      <pre id="snippet-install"><span class="tok-tag">&lt;script</span> <span class="tok-attr">src</span>=<span class="tok-str">"https://sound.clubf5.com/widget-embed.js"</span><span class="tok-tag">&gt;&lt;/script&gt;</span>
+<span class="tok-tag">&lt;div</span> <span class="tok-attr">id</span>=<span class="tok-str">"clubf5-player"</span><span class="tok-tag">&gt;&lt;/div&gt;</span>
+
+<span class="tok-tag">&lt;script&gt;</span>
+  <span class="tok-fn">ClubF5Widget</span>.<span class="tok-fn">connect</span>(<span class="tok-str">'clubf5-player'</span>, {
+    token: <span class="tok-str">'JWT_TOKEN_HERE'</span> <span class="tok-com">// lo pide tu backend, ver sección Token</span>
+  });
+<span class="tok-tag">&lt;/script&gt;</span></pre>
+    </div>
+
+    <p class="lede" style="margin-bottom:0">
+      El <code style="background:var(--panel-2); padding:2px 6px; border-radius:4px; color:var(--amber);">token</code>
+      nunca se escribe en el DOM ni en la URL del iframe: viaja de tu página al widget por
+      <code style="background:var(--panel-2); padding:2px 6px; border-radius:4px; color:var(--amber);">postMessage</code>,
+      un canal que no queda expuesto en el HTML ni en el historial del navegador.
+    </p>
+  </div>
+</section>
+
+<!-- ================= MODOS ================= -->
+<section id="modos">
+  <div class="shell">
+    <div class="eyebrow">02 · Modos de conexión</div>
+    <h2>Elegí cómo entregás el token</h2>
+    <p class="lede">Dos formas de conectar el widget. Usá la recomendada salvo que ya tengas el modo legacy integrado.</p>
+
+    <div class="modes">
+      <div class="mode-card rec">
+        <div class="mode-head">
+          <div class="mode-title">connect()</div>
+          <span class="pill rec">Recomendado</span>
+        </div>
+        <p class="mode-desc">Token entregado por JavaScript vía postMessage. Habilita la auto-renovación del widget.</p>
+        <div class="codeblock" style="margin-bottom:0">
+          <div class="bar"><span class="tag">JS</span><button class="copy-btn" data-copy="snippet-connect">Copiar</button></div>
+          <pre id="snippet-connect"><span class="tok-fn">ClubF5Widget</span>.<span class="tok-fn">connect</span>(<span class="tok-str">'clubf5-player'</span>, {
+  token: miToken,
+  theme: <span class="tok-str">'dark'</span>,
+  height: <span class="tok-str">'80px'</span>
+});</pre>
+        </div>
+      </div>
+
+      <div class="mode-card">
+        <div class="mode-head">
+          <div class="mode-title">data-token</div>
+          <span class="pill legacy">Legacy</span>
+        </div>
+        <p class="mode-desc">Token como atributo del contenedor. Más simple, pero el token queda en el DOM y no se auto-renueva.</p>
+        <div class="codeblock" style="margin-bottom:0">
+          <div class="bar"><span class="tag">HTML</span><button class="copy-btn" data-copy="snippet-legacy">Copiar</button></div>
+          <pre id="snippet-legacy"><span class="tok-tag">&lt;div</span>
+  <span class="tok-attr">id</span>=<span class="tok-str">"clubf5-player"</span>
+  <span class="tok-attr">data-token</span>=<span class="tok-str">"JWT_TOKEN_HERE"</span>
+<span class="tok-tag">&gt;&lt;/div&gt;</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <p class="lede" style="margin-top:24px; margin-bottom:0;">
+      Con <code style="background:var(--panel-2); padding:2px 6px; border-radius:4px; color:var(--amber);">data-token</code>,
+      cuando el token expira el widget deja de autenticar y no hay ningún canal vivo para pedir uno nuevo —
+      hay que recargar la página con un token fresco. Con <code style="background:var(--panel-2); padding:2px 6px; border-radius:4px; color:var(--amber);">connect()</code>,
+      el widget renueva la sesión solo mientras el iframe siga abierto.
+    </p>
+  </div>
+</section>
+
+<!-- ================= TOKEN ================= -->
+<section id="token">
+  <div class="shell">
+    <div class="eyebrow">03 · Obtener un token</div>
+    <h2>El token lo emite tu backend, nunca el sitio de terceros</h2>
+    <p class="lede">
+      Tu propia app (ya autenticada) le pide a la API un token de corta duración específico para el widget.
+      Ese es el único valor que se le pasa al script embebido — nunca la sesión larga ni el refresh token real del usuario.
+    </p>
+
+    <div class="codeblock">
+      <div class="bar"><span class="tag">HTTP</span><button class="copy-btn" data-copy="snippet-token">Copiar</button></div>
+      <pre id="snippet-token"><span class="tok-kw">POST</span> /api/Token/WidgetToken
+Authorization: Bearer &lt;tu_token_de_sesion&gt;
+Content-Type: application/json
+
+{ <span class="tok-str">"horas"</span>: 2 }  <span class="tok-com">// opcional · 1–24 · default 2</span></pre>
+        </div>
+
+    <div class="table-wrap" style="margin-top:8px;">
+      <table>
+        <thead><tr><th>Campo de la respuesta</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td><code>access_token</code></td><td>JWT a pasar en <code>ClubF5Widget.connect({ token })</code></td></tr>
+          <tr><td><code>refresh_token</code></td><td>Interno del widget — no hace falta manejarlo a mano, se renueva solo.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="lede" style="margin-top:24px; margin-bottom:0">
+      El usuario/cuenta usada para pedir el token tiene que ser de rol <b style="color:var(--text)">"Reproductor"</b> —
+      cualquier otro rol es rechazado por el widget con <span style="color:var(--text-muted)">"Rol no autorizado"</span> antes de intentar reproducir nada.
+    </p>
+  </div>
+</section>
+
+<!-- ================= OPCIONES ================= -->
+<section id="opciones">
+  <div class="shell">
+    <div class="eyebrow">04 · Opciones</div>
+    <h2>Ajustes visuales del iframe</h2>
+    <p class="lede">Se pasan como segundo argumento de <code style="background:var(--panel-2); padding:2px 6px; border-radius:4px; color:var(--amber);">connect()</code>, o como atributos <code style="background:var(--panel-2); padding:2px 6px; border-radius:4px; color:var(--amber);">data-*</code> en modo legacy.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Opción</th><th>Valores</th><th>Default</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr><td><code>width</code></td><td>cualquier CSS length</td><td><code>100%</code></td><td>Ancho del iframe.</td></tr>
+          <tr><td><code>height</code></td><td>cualquier CSS length</td><td><code>80px</code></td><td>Alto del iframe.</td></tr>
+          <tr><td><code>theme</code></td><td><code>dark</code> · <code>light</code></td><td><code>dark</code></td><td>Paleta del reproductor.</td></tr>
+          <tr><td><code>border</code></td><td><code>true</code> · <code>false</code></td><td><code>false</code></td><td>Borde sutil alrededor del widget.</td></tr>
+          <tr><td><code>radius</code></td><td>px, sin unidad</td><td><code>8</code></td><td>Radio de esquinas del iframe.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ================= API ================= -->
+<section id="api">
+  <div class="shell">
+    <div class="eyebrow">05 · API de JavaScript</div>
+    <h2>window.ClubF5Widget</h2>
+    <p class="lede">Cuatro métodos, expuestos globalmente apenas carga el script.</p>
+
+    <div class="api-grid">
+      <div class="api-card">
+        <div class="api-sig">connect(id, options) → Promise</div>
+        <div class="api-desc">Conecta un widget de forma segura. <code style="background:var(--panel-2); padding:1px 5px; border-radius:4px; color:var(--amber);">id</code> es el ID del contenedor o un HTMLElement. Devuelve la instancia una vez creado el iframe.</div>
+      </div>
+      <div class="api-card">
+        <div class="api-sig">init()</div>
+        <div class="api-desc">Autoinicializa contenedores con <code style="background:var(--panel-2); padding:1px 5px; border-radius:4px; color:var(--amber);">data-token</code> (modo legacy). Corre sola al cargar el DOM, normalmente no hace falta llamarla a mano.</div>
+      </div>
+      <div class="api-card">
+        <div class="api-sig">destroy()</div>
+        <div class="api-desc">Destruye todas las instancias activas y remueve sus iframes del DOM.</div>
+      </div>
+      <div class="api-card">
+        <div class="api-sig">getInstances() → Array</div>
+        <div class="api-desc">Devuelve las instancias activas actuales, cada una con su propio <code style="background:var(--panel-2); padding:1px 5px; border-radius:4px; color:var(--amber);">destroy()</code> puntual.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SEGURIDAD ================= -->
+<section id="seguridad">
+  <div class="shell">
+    <div class="eyebrow">06 · Seguridad</div>
+    <h2>Qué protege esta integración</h2>
+    <p class="lede">Pensado específicamente para vivir en sitios que vos no controlás.</p>
+
+    <div class="sec-list">
+      <div class="sec-item">
+        <div class="num">01</div>
+        <div><h4>El token nunca va en la URL</h4><p>Viaja por <code>postMessage</code>, validado por nonce y origen — no queda en el historial del navegador ni en logs de servidor.</p></div>
+      </div>
+      <div class="sec-item">
+        <div class="num">02</div>
+        <div><h4>Vida corta, no la sesión completa</h4><p>El widget usa un JWT de horas, no el token de sesión de un año. Si el sitio de terceros se ve comprometido, la ventana de exposición es acotada.</p></div>
+      </div>
+      <div class="sec-item">
+        <div class="num">03</div>
+        <div><h4>Renovación automática y transparente</h4><p>Mientras el iframe siga abierto, el propio widget pide un token nuevo antes de que el actual expire — el sitio anfitrión no hace nada.</p></div>
+      </div>
+      <div class="sec-item">
+        <div class="num">04</div>
+        <div><h4>Iframe en sandbox</h4><p><code>allow-scripts allow-same-origin allow-popups allow-forms</code> — sin acceso a APIs sensibles del documento anfitrión.</p></div>
+      </div>
+      <div class="sec-item">
+        <div class="num">05</div>
+        <div><h4>Reintentos con límite</h4><p>Ante una falla real de renovación (no transitoria), el widget deja de insistir con un token que ya sabe inválido y repite el handshake desde cero.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= FAQ ================= -->
+<section id="faq">
+  <div class="shell">
+    <div class="eyebrow">07 · Solución de problemas</div>
+    <h2>Errores comunes</h2>
+
+    <details class="faq" open>
+      <summary>"Contenedor no encontrado: #id"</summary>
+      <div class="faq-body">El <code>id</code> pasado a <code>connect()</code> no existe en el DOM en el momento de la llamada. Asegurate de llamar a <code>connect()</code> después de que el <code>&lt;div&gt;</code> ya esté renderizado.</div>
+    </details>
+
+    <details class="faq">
+      <summary>"El token JWT ha expirado"</summary>
+      <div class="faq-body">El script valida el <code>exp</code> del token antes de crear el iframe (con 60s de margen). Pedí un token nuevo a <code>/Token/WidgetToken</code> — no reutilices uno viejo entre cargas de página.</div>
+    </details>
+
+    <details class="faq">
+      <summary>"Rol no autorizado"</summary>
+      <div class="faq-body">El widget solo acepta tokens cuyo claim de rol sea <code>Reproductor</code>. Verificá con qué usuario/cuenta se está pidiendo el <code>WidgetToken</code> del lado del backend.</div>
+    </details>
+
+    <details class="faq">
+      <summary>"Handshake timeout - falling back to URL token"</summary>
+      <div class="faq-body">El iframe no recibió respuesta al <code>postMessage</code> en 30s (el parent no llamó a <code>connect()</code> a tiempo, o el origen no coincidió). El widget cae al modo legacy como último recurso.</div>
+    </details>
+
+    <details class="faq">
+      <summary>"Token no válido. Este refresh ya ha sido utilizado."</summary>
+      <div class="faq-body">El refresh token es de un solo uso: cada renovación invalida el anterior. Este error aparece si una respuesta de renovación se perdió en el camino. El widget lo detecta como error terminal y repite el handshake completo en vez de seguir reintentando con un refresh que ya no sirve.</div>
+    </details>
+
+    <details class="faq">
+      <summary>"El usuario ha finalizado su sesión de forma manual"</summary>
+      <div class="faq-body">Alguien cerró sesión explícitamente para ese usuario (logout), lo que invalida también los tokens del widget emitidos a su nombre. Hay que pedir un <code>WidgetToken</code> nuevo tras un login fresco.</div>
+    </details>
+  </div>
+</section>
+
+<footer>
+  ClubF5 Sound Widget · Guía interna de integración
+</footer>
+
+<script>
+  // ---------- ticks del dial de frecuencia ----------
+  (function drawTicks(){
+    const g = document.getElementById('ticks');
+    if(!g) return;
+    let svg = '';
+    for(let i=0;i<64;i++){
+      const x = i*10;
+      const tall = i % 8 === 0;
+      svg += `<line x1="${x}" y1="${tall?4:14}" x2="${x}" y2="26" stroke="rgba(150,160,175,${tall?0.5:0.22})" stroke-width="1"></line>`;
+    }
+    g.innerHTML = svg;
+  })();
+
+  // ---------- copiar código ----------
+  document.querySelectorAll('.copy-btn').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const target = document.getElementById(btn.dataset.copy);
+      if(!target) return;
+      const text = target.innerText;
+      try{
+        await navigator.clipboard.writeText(text);
+        const original = btn.textContent;
+        btn.textContent = 'Copiado ✓';
+        setTimeout(()=>{ btn.textContent = original; }, 1600);
+      }catch(e){ /* portapapeles no disponible, se ignora silenciosamente */ }
+    });
+  });
+
+  // ---------- verificador de token (misma lógica que valida SoundWidget.vue) ----------
+  const EXPECTED_ISSUER = 'ClubF5-API-Dev';
+  const EXPECTED_AUDIENCE = 'ClubF5-Client-Dev';
+
+  function base64UrlDecode(str){
+    str = str.replace(/-/g,'+').replace(/_/g,'/');
+    while(str.length % 4) str += '=';
+    return atob(str);
+  }
+
+  function inspectToken(token){
+    const out = { valid:false, error:null, payload:null };
+    if(!token || typeof token !== 'string'){ out.error = 'Pegá un token para inspeccionar'; return out; }
+    const parts = token.trim().split('.');
+    if(parts.length !== 3){ out.error = 'Formato inválido: un JWT tiene 3 partes separadas por "."'; return out; }
+    try{
+      const header = JSON.parse(base64UrlDecode(parts[0]));
+      if(!header.alg){ out.error = 'El header no tiene "alg"'; return out; }
+      const payload = JSON.parse(base64UrlDecode(parts[1]));
+      out.payload = payload;
+      if(!payload.exp){ out.error = 'El payload no tiene "exp"'; return out; }
+      const expMs = payload.exp * 1000;
+      if(Date.now() >= expMs - 60000){ out.error = 'Token expirado (o vence en menos de 60s)'; return out; }
+      if(payload.iss && payload.iss !== EXPECTED_ISSUER){ out.error = `Issuer no coincide (esperado "${EXPECTED_ISSUER}")`; return out; }
+      if(payload.aud && payload.aud !== EXPECTED_AUDIENCE){ out.error = `Audiencia no coincide (esperada "${EXPECTED_AUDIENCE}")`; return out; }
+      out.valid = true;
+    }catch(e){
+      out.error = 'No se pudo decodificar: ' + e.message;
+    }
+    return out;
+  }
+
+  const tokenInput = document.getElementById('tokenInput');
+  const tokenResult = document.getElementById('tokenResult');
+
+  function renderResult(){
+    const val = tokenInput.value.trim();
+    if(!val){ tokenResult.innerHTML = ''; return; }
+    const r = inspectToken(val);
+
+    if(!r.valid){
+      tokenResult.innerHTML = `
+        <div class="status-row"><span class="status-dot bad"></span> ${r.error}</div>
+        ${r.payload ? renderKv(r.payload) : ''}
+      `;
+      return;
+    }
+
+    tokenResult.innerHTML = `
+      <div class="status-row"><span class="status-dot ok"></span> Token válido</div>
+      ${renderKv(r.payload)}
+    `;
+  }
+
+  function renderKv(payload){
+    const role = payload.role || payload.Role || '—';
+    const user = payload.unique_name || payload.name || '—';
+    const exp = payload.exp ? new Date(payload.exp*1000).toLocaleString('es-AR') : '—';
+    const iss = payload.iss || '—';
+    const aud = payload.aud || '—';
+    return `
+      <div class="kv">
+        <span>usuario</span><b>${escapeHtml(user)}</b>
+        <span>rol</span><b>${escapeHtml(role)}</b>
+        <span>expira</span><b>${escapeHtml(exp)}</b>
+        <span>issuer</span><b>${escapeHtml(iss)}</b>
+        <span>audiencia</span><b>${escapeHtml(aud)}</b>
+      </div>`;
+  }
+
+  function escapeHtml(s){
+    const d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+
+  if(tokenInput){
+    tokenInput.addEventListener('input', renderResult);
+  }
+</script>
+
+</body>
+</html>
